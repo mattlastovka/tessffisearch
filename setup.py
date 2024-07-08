@@ -1,10 +1,8 @@
 from setuptools import setup
 
-from tessffisearch import __version__
-
 setup(
 	name='tessffisearch',
-	version=__version__,
+	version="0.0.1",
 	url="https://github.com/mattlastovka/tessffisearch",
 	author="Matthew Lastovka",
 	author_email="mlastovk@umd.edu",
