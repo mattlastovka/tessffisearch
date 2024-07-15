@@ -7,6 +7,9 @@ from tessphomo import TESSTargetPixelModeler
 from tessphomo.mast import retrieve_tess_ffi_cutout_from_mast, get_tic_sources
 import numbers
 from wotan import flatten
+import os
+from astropy.table import QTable
+import re
 
 #Plot settings
 myplot_specs = {
@@ -287,5 +290,22 @@ def make_light_curves(ticid, cutout_size=(25,25), lc_save_direc='./tessphomo_lig
             light_curves.append(lc)
         except:
             print("ERROR!!!!!")
+    return light_curves, sectors
+
+def retrieve_or_make_lc(ticid, lc_save_direc):
+    dir_list = np.asarray(os.listdir(lc_save_direc))
+    mask = np.asarray([(str(ticid).zfill(12) in i) for i in dir_list])
+    masked_dir_list = dir_list[mask]
+    if len(masked_dir_list) == 0:
+        light_curves, sectors = make_light_curves(ticid, lc_save_direc=lc_save_direc)
+    else:
+        print("light curves exist")
+        light_curves = []
+        sectors = []
+        for i in masked_dir_list:
+            lightc = QTable.read(("test_data/" + i), format='fits', astropy_native=True)
+            lightc['time'] = lightc['time'].btjd
+            light_curves.append(lightc)
+            sectors.append(re.findall('sector_00(.*)_tic', i)[0])
     return light_curves, sectors
 
