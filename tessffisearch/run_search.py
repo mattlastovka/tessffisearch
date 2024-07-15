@@ -3,8 +3,6 @@ import matplotlib.pyplot as plt
 import astropy.constants as c
 import astropy.units as u
 from transitleastsquares import (transitleastsquares,cleaned_array,catalog_info,transit_mask)
-import sys
-sys.path.append("/Users/matthewlastovka/local/TESSphomo")
 from tessphomo import TESSTargetPixelModeler
 from tessphomo.mast import retrieve_tess_ffi_cutout_from_mast, get_tic_sources
 from astropy.stats import sigma_clip
