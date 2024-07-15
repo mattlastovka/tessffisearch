@@ -303,7 +303,7 @@ def retrieve_or_make_lc(ticid, lc_save_direc):
         light_curves = []
         sectors = []
         for i in masked_dir_list:
-            lightc = QTable.read(("test_data/" + i), format='fits', astropy_native=True)
+            lightc = QTable.read((lc_save_direc + i), format='fits', astropy_native=True)
             lightc['time'] = lightc['time'].btjd
             light_curves.append(lightc)
             sectors.append(re.findall('sector_00(.*)_tic', i)[0])
