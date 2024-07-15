@@ -46,7 +46,7 @@ if __name__ == "__main__":
     n2_targ = n2_list[T_mask]
     n2_targ = n2_targ.sort_values('MES', ascending=False).reset_index()
 
-    for tic_index in range(162, 182):
+    for tic_index in range(len(n2_targ)):
         ticid = int(n2_targ['ID'][tic_index])
         print("TIC", ticid)
         print("TESSmag", n2_targ['Tmag'][tic_index])
@@ -56,4 +56,4 @@ if __name__ == "__main__":
 
     runtime = (end_time - start_time) / 60
 
-    print("runtime =", runtime, "minutes for", len(n2_targ[30:60]), "targets.")
+    print("runtime =", runtime, "minutes for", len(n2_targ), "targets.")
