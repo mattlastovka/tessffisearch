@@ -8,4 +8,4 @@ wotan==1.10
 pandas==2.2.1
 scipy==1.12.0
 TESS-PRF==0.1.3
--e git+https://github.com/robertfwilson/TESSphomo.git@2554871ef53d49f87edb924d57afd6ecbbd5d64d#egg=tessphomo
+#-e git+https://github.com/robertfwilson/TESSphomo.git@2554871ef53d49f87edb924d57afd6ecbbd5d64d#egg=tessphomo
