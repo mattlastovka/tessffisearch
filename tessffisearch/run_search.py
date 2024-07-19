@@ -49,15 +49,10 @@ if __name__ == "__main__":
     begin = int(sys.argv[1])
     end = int(sys.argv[2])
 
-<<<<<<< HEAD
     target_list = pd.read_csv("target_list.csv")
 
     for tic_index in range(begin, end):
         ticid = int(target_list['ID'][tic_index])
-=======
-    for tic_index in range(162, 182):
-        ticid = int(n2_targ['ID'][tic_index])
->>>>>>> parent of bc128fb (Update run_search.py)
         print("TIC", ticid)
         print("TESSmag", target_list['Tmag'][tic_index])
         mass = target_list['mass'][tic_index]
@@ -72,8 +67,4 @@ if __name__ == "__main__":
 
     runtime = (end_time - start_time) / 60
 
-<<<<<<< HEAD
     print("runtime =", runtime, "minutes for", len(range(begin, end)), "targets.")
-=======
-    print("runtime =", runtime, "minutes for", len(n2_targ[30:60]), "targets.")
->>>>>>> parent of bc128fb (Update run_search.py)
