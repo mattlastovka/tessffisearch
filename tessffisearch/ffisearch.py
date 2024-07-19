@@ -265,7 +265,7 @@ def save_results_file(file_name, results, params):
 
 def search_for_transit(time, flux, mass, radius, num_threads):
     model = transitleastsquares(time, flux)
-    results = model.power(use_threads=num_threads, M_star=mass, R_star=radius)
+    results = model.power(use_threads=num_threads)
     return results
 
 def flatten_lightcurve(time, flux, sigma_upper, sigma_lower, window_length, method):
