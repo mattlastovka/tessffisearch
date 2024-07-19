@@ -55,7 +55,7 @@ if __name__ == "__main__":
         print("TIC", ticid)
         print("TESSmag", target_list['Tmag'][tic_index])
         mass = target_list['mass'][tic_index]
-        radius = target_list['radius']
+        radius = target_list['rad']
         run_the_search(ticid, mass, radius)
         finish_file = './transit_search/finished_runs.txt'
         finfile = open(finish_file, "a")  # append mode
