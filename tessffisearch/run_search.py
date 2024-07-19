@@ -1,5 +1,4 @@
 import ffisearch as ff
-from multiprocessing import Pool
 import time
 import pandas as pd
 import pathlib
