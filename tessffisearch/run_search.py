@@ -48,7 +48,7 @@ if __name__ == "__main__":
     begin = int(sys.argv[1])
     end = int(sys.argv[2])
 
-    target_list = pd.read_csv("target_list.csv")
+    target_list = pd.read_csv("targets.csv")
 
     for tic_index in range(begin, end):
         ticid = int(target_list['ID'][tic_index])
