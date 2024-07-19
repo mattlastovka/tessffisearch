@@ -113,12 +113,12 @@ def count(list1, l, r):
     """
     return len(list(x for x in list1 if l <= x <= r))
 
-def flagging_criteria(all_results, save_direc='./transit_search/'):
+def flagging_criteria(all_results, sde_thresh = 6, save_direc='./transit_search/', sec_thresh=2):
     #This is the code for flagging whether a transit-like signal is detected
     new_results = []
     flag = False
     for i in all_results:
-        if i.FAP < 1e-2 and (i.SDE > 7):
+        if i.FAP < 1e-2 and (i.SDE > sde_thresh):
             if i.transit_count >= 2:
                 new_results.append(i)
                 transit_file = save_direc + 'transit_times.txt'
@@ -137,7 +137,7 @@ def flagging_criteria(all_results, save_direc='./transit_search/'):
         upper = i.period + 2*i.period_uncertainty
         lower = i.period - 2*i.period_uncertainty
         sim_count = count(new_ps, lower, upper)
-        if sim_count > 1:
+        if sim_count > (sec_thresh-1):
             flag = True
     if flag is True:
         print("Potential transit detected")
@@ -263,9 +263,9 @@ def save_results_file(file_name, results, params):
     #df3.columns = key_list[42:47]
     #df3.to_csv(file_name + 'phase.csv')
 
-def search_for_transit(time, flux, ab):
+def search_for_transit(time, flux, mass, radius, num_threads):
     model = transitleastsquares(time, flux)
-    results = model.power(u=ab)
+    results = model.power(use_threads=num_threads, M_star=mass, R_star=radius)
     return results
 
 def flatten_lightcurve(time, flux, sigma_upper, sigma_lower, window_length, method):
@@ -275,7 +275,7 @@ def flatten_lightcurve(time, flux, sigma_upper, sigma_lower, window_length, meth
                                return_trend=True, method=method, break_tolerance=0.1)
     return time[~mask], flatten_lc, trend_lc
 
-def make_light_curves(ticid, cutout_size=(25,25), lc_save_direc='./tessphomo_lightcurves/'):
+def make_light_curves(ticid, lc_save_direc, cutout_size=(25,25)):
     all_tpfs = retrieve_tess_ffi_cutout_from_mast(ticid=ticid, cutout_size=cutout_size, sector=None)
     print(len(all_tpfs), "tpfs")
     input_catalog = get_tic_sources(ticid, tpf_shape=all_tpfs[0].shape[1:])

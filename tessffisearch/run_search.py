@@ -1,7 +1,12 @@
 import ffisearch as ff
-from transitleastsquares import catalog_info
+from multiprocessing import Pool
+import time
+import pandas as pd
+import pathlib
+import sys
 
-def run_the_search(ticid, sigma_upper=4., sigma_lower=12., window_length=0.8, method='biweight'):
+def run_the_search(ticid, mass, radius, sigma_upper=4., sigma_lower=12., window_length=0.8, 
+                    method='biweight', sde_thresh=6, sec_thresh=2, num_threads=4):
     light_curves, sectors = ff.retrieve_or_make_lc(ticid, lc_save_direc='./test_data/')
     print("Finished")
     flux_id = ff.determine_best_flux(light_curves)
@@ -16,14 +21,13 @@ def run_the_search(ticid, sigma_upper=4., sigma_lower=12., window_length=0.8, me
         all_flat.append(flat)
         all_trend.append(trend)
         all_times.append(times)
-    ab, mass, mass_min, mass_max, radius, radius_min, radius_max = catalog_info(TIC_ID=ticid)
     print("running transit search")
     all_results = []
     for i in range(len(light_curves)):
-        results = ff.search_for_transit(all_times[i], all_flat[i], ab)
+        results = ff.search_for_transit(all_times[i], all_flat[i], mass, radius, num_threads)
         all_results.append(results)
     print("Determine Flag")
-    flag = ff.flagging_criteria(all_results, save_direc='./')
+    flag = ff.flagging_criteria(all_results, sde_thresh = sde_thresh, sec_thresh=sec_thresh, save_direc='./')
     if flag is True:
         flag_file = './transit_search/flagged_tic.txt'
         file1 = open(flag_file, "a")  # append mode
@@ -36,24 +40,40 @@ def run_the_search(ticid, sigma_upper=4., sigma_lower=12., window_length=0.8, me
     new_dir.mkdir(parents=True, exist_ok=True)
     for i in range(len(all_results)):
         file_name = path_name + '/transitsearch_TIC_' + str(ticid) + '_sector_' + str(sectors[i]) + '_'
-        mk.save_results_file(file_name, results, params)
+        ff.save_results_file(file_name, results, params)
+    return 0
 
 if __name__ == "__main__":
     start_time = time.time()
 
-    n2_list = pd.read_csv("n2_targets_list.csv")
-    T_mask = (n2_list['Tmag'] > 10.5) & (n2_list['Tmag'] < 15)
-    n2_targ = n2_list[T_mask]
-    n2_targ = n2_targ.sort_values('MES', ascending=False).reset_index()
+    begin = int(sys.argv[1])
+    end = int(sys.argv[2])
 
-    for tic_index in range(len(n2_targ)):
+<<<<<<< HEAD
+    target_list = pd.read_csv("target_list.csv")
+
+    for tic_index in range(begin, end):
+        ticid = int(target_list['ID'][tic_index])
+=======
+    for tic_index in range(162, 182):
         ticid = int(n2_targ['ID'][tic_index])
+>>>>>>> parent of bc128fb (Update run_search.py)
         print("TIC", ticid)
-        print("TESSmag", n2_targ['Tmag'][tic_index])
-        run_the_search(ticid)
+        print("TESSmag", target_list['Tmag'][tic_index])
+        mass = target_list['mass'][tic_index]
+        radius = target_list['radius']
+        run_the_search(ticid, mass, radius)
+        finish_file = './transit_search/finished_runs.txt'
+        finfile = open(finish_file, "a")  # append mode
+        finfile.write(str(tic_index) + " " + str(ticid) + '\n')
+        finfile.close()
 
     end_time = time.time()
 
     runtime = (end_time - start_time) / 60
 
-    print("runtime =", runtime, "minutes for", len(n2_targ), "targets.")
+<<<<<<< HEAD
+    print("runtime =", runtime, "minutes for", len(range(begin, end)), "targets.")
+=======
+    print("runtime =", runtime, "minutes for", len(n2_targ[30:60]), "targets.")
+>>>>>>> parent of bc128fb (Update run_search.py)
