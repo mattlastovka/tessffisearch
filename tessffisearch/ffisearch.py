@@ -12,6 +12,7 @@ from astropy.table import QTable
 import re
 import io
 import sqlite3
+import warnings
 
 #Plot settings
 myplot_specs = {
@@ -93,19 +94,19 @@ def determine_best_flux(light_curves):
         elif cap_std < prf_std:
             cap_tal += 1
     if cap_tal > prf_tal:
-        print("Use cap")
+        #print("Use cap")
         flux_id = 'cal_cap_flux'
     elif prf_tal > cap_tal:
-        print("Use prf")
+        #print("Use prf")
         flux_id = 'cal_prf_flux'
     else:
         cap_d = sum([np.std(light_curves[i]['cal_cap_flux'].value) for i in range(len(light_curves))])
         prf_d = sum([np.std(light_curves[i]['cal_prf_flux'].value) for i in range(len(light_curves))])
         if cap_d < prf_d:
-            print("Use cap")
+            #print("Use cap")
             flux_id = 'cal_cap_flux'
         else:
-            print("Use prf")
+            #print("Use prf")
             flux_id = 'cal_prf_flux'
     return flux_id
 
@@ -144,10 +145,10 @@ def flagging_criteria(all_results, sde_thresh = 6, save_direc='./transit_search/
             flag = True
             secs.append(sim_count)
     if flag is True:
-        print("Potential transit detected")
+        #print("Potential transit detected")
         sec_num = max(secs)
     else:
-        print("No transit found")
+        #print("No transit found")
         sec_num = 0
     return flag, sec_num
 
@@ -295,9 +296,10 @@ def save_results_file(results, params, ticid, sector, save_direc):
 
 def search_for_transit(time, flux, mass, radius, num_threads):
     model = transitleastsquares(time, flux)
-    results = model.power(use_threads=num_threads, M_star=mass, M_star_min=0.8*mass, 
-                            M_star_max=1.2*mass, R_star=radius, R_star_min=0.8*radius, R_star_max=1.2*radius,
-                            show_progress_bar = False, verbose=False)
+    with warnings.catch_warnings(action="ignore"):
+        results = model.power(use_threads=num_threads, M_star=mass, M_star_min=0.8*mass, 
+                                M_star_max=1.2*mass, R_star=radius, R_star_min=0.8*radius, R_star_max=1.2*radius,
+                                show_progress_bar = False, verbose=False)
     return results
 
 def flatten_lightcurve(time, flux, sigma_upper, sigma_lower, window_length, method):
@@ -307,7 +309,7 @@ def flatten_lightcurve(time, flux, sigma_upper, sigma_lower, window_length, meth
                                return_trend=True, method=method, break_tolerance=0.1)
     return time[~mask], flatten_lc, trend_lc
 
-def make_light_curves(ticid, lc_save_direc, cutout_size=(25,25)):
+def make_light_curves(ticid, lc_save_direc, logger, cutout_size=(25,25)):
     all_tpfs = retrieve_tess_ffi_cutout_from_mast(ticid=ticid, cutout_size=cutout_size, sector=None)
     print(len(all_tpfs), "tpfs")
     input_catalog = get_tic_sources(ticid, tpf_shape=all_tpfs[0].shape[1:])
@@ -324,14 +326,15 @@ def make_light_curves(ticid, lc_save_direc, cutout_size=(25,25)):
             print("ERROR!!!!!")
     return light_curves, sectors
 
-def retrieve_or_make_lc(ticid, lc_save_direc):
+def retrieve_or_make_lc(ticid, lc_save_direc, logger):
     dir_list = np.asarray(os.listdir(lc_save_direc))
     mask = np.asarray([(str(ticid).zfill(12) in i) for i in dir_list])
     masked_dir_list = dir_list[mask]
     if len(masked_dir_list) == 0:
-        light_curves, sectors = make_light_curves(ticid, lc_save_direc=lc_save_direc)
+        logger.info("making light curves")
+        light_curves, sectors = make_light_curves(ticid, lc_save_direc=lc_save_direc, logger=logger)
     else:
-        print("light curves exist")
+        logger.info("light curves exist")
         light_curves = []
         sectors = []
         for i in masked_dir_list:
