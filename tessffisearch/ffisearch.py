@@ -171,7 +171,7 @@ sqlite3.register_adapter(np.ndarray, adapt_array)
 # Converts TEXT to np.array when selecting
 sqlite3.register_converter("array", convert_array)
 
-def save_results_file(results, params, ticid, sector):
+def save_results_file(results, params, ticid, sector, save_direc):
     """
     This function saves the results of the transit search to a file. This function can save 3 different,
     files, the statistics, the periodogram, and the phase-folded light curve. Based on the current iteration,
@@ -263,7 +263,8 @@ def save_results_file(results, params, ticid, sector):
     #Reorder the array so that each element corresponds to a different column in the dataframe
     reordered_array = np.column_stack(full_results)
     #Add the results to the database file
-    con = sqlite3.connect("transit_search_results.db", detect_types=sqlite3.PARSE_DECLTYPES)
+    file_name = save_direc + "transit_search_results.db"
+    con = sqlite3.connect(file_name, detect_types=sqlite3.PARSE_DECLTYPES)
     cur = con.cursor()
     cur.execute("insert into results (ticid, sector, arr) values (?, ?, ?)", (ticid, sector, reordered_array, ))
     con.commit()

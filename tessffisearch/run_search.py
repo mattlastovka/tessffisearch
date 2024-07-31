@@ -36,7 +36,7 @@ def run_the_search(ticid, mass, radius, save_direc, sigma_upper=4., sigma_lower=
     print("saving transit search results")
     params = [flag, sec_num, sigma_upper, sigma_lower, window_length, method, flux_id]
     for i in range(len(all_results)):
-        ff.save_results_file(all_results[i], params, ticid, sectors[i])
+        ff.save_results_file(all_results[i], params, ticid, sectors[i], save_direc)
     return 0
 
 if __name__ == "__main__":
