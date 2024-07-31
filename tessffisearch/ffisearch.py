@@ -10,6 +10,8 @@ from wotan import flatten
 import os
 from astropy.table import QTable
 import re
+import io
+import sqlite3
 
 #Plot settings
 myplot_specs = {
@@ -121,29 +123,53 @@ def flagging_criteria(all_results, sde_thresh = 6, save_direc='./transit_search/
         if i.FAP < 1e-2 and (i.SDE > sde_thresh):
             if i.transit_count >= 2:
                 new_results.append(i)
-                transit_file = save_direc + 'transit_times.txt'
-                file3 = open(transit_file, "a")  # append mode
-                for j in range(i.transit_count):
-                    file3.write(str(i.transit_times[j]) + " ")
-                file3.write("\n")
-                file3.close()
-            else:
-                low_file = save_direc + 'flagged_w_1_transit.txt'
-                file2 = open(low_file, "a")  # append mode
-                file2.write(str(ticid) + '\n')
-                file2.close()
+                #transit_file = save_direc + 'transit_times.txt'
+                #file3 = open(transit_file, "a")  # append mode
+                #for j in range(i.transit_count):
+                #    file3.write(str(i.transit_times[j]) + " ")
+                #file3.write("\n")
+                #file3.close()
+            #else:
+                #low_file = save_direc + 'flagged_w_1_transit.txt'
+                #file2 = open(low_file, "a")  # append mode
+                #file2.write(str(ticid) + '\n')
+                #file2.close()
     new_ps = [i.period for i in new_results]
+    secs = []
     for i in new_results:
-        upper = i.period + 2*i.period_uncertainty
-        lower = i.period - 2*i.period_uncertainty
+        upper = i.period + i.period_uncertainty
+        lower = i.period - i.period_uncertainty
         sim_count = count(new_ps, lower, upper)
         if sim_count > (sec_thresh-1):
             flag = True
+            secs.append(sim_count)
     if flag is True:
         print("Potential transit detected")
+        sec_num = max(secs)
     else:
         print("No transit found")
-    return flag
+        sec_num = 0
+    return flag, sec_num
+
+def adapt_array(arr):
+    """
+    http://stackoverflow.com/a/31312102/190597 (SoulNibbler)
+    """
+    out = io.BytesIO()
+    np.save(out, arr)
+    out.seek(0)
+    return sqlite3.Binary(out.read())
+
+def convert_array(text):
+    out = io.BytesIO(text)
+    out.seek(0)
+    return np.load(out, allow_pickle=True)
+
+# Converts np.array to TEXT when inserting
+sqlite3.register_adapter(np.ndarray, adapt_array)
+
+# Converts TEXT to np.array when selecting
+sqlite3.register_converter("array", convert_array)
 
 def save_results_file(file_name, results, params):
     """
@@ -182,7 +208,7 @@ def save_results_file(file_name, results, params):
                 Should be either "cal_cap_flux" or "cal_prf_flux"
     """
     #Determine the keys for the TLS results
-    keys = [key for key in results.keys()]
+    #keys = [key for key in results.keys()]
     #Determine the size of each element in the results object, so that we know the correct number of
     #"None"s to add.
     el_lengths = []
@@ -195,8 +221,8 @@ def save_results_file(file_name, results, params):
     #print(el_lengths)
     full_results = []
     e2 = max(el_lengths)-1
-    key_list = ['flag', 'sigma_upper', 'sigma_lower', 'window_length', 'method', 'flux_id']
-    key_list.extend(keys)
+    #key_list = ['flag', 'sigma_upper', 'sigma_lower', 'window_length', 'method', 'flux_id']
+    #key_list.extend(keys)
     #Go through each of the extra parameters to add at the beginning of each file. Extend each list
     #to match the length of the largest element
     fl = [params[0]]
@@ -236,10 +262,13 @@ def save_results_file(file_name, results, params):
             full_results.append(list(thelis))
     #Reorder the array so that each element corresponds to a different column in the dataframe
     reordered_array = np.column_stack(full_results)
-    #Add elements and column headers to a pandas dataframe, then save as a csv
-    df = pd.DataFrame(reordered_array)
-    df.columns = key_list[:34]
-    df.to_csv(file_name + 'stats.csv')
+    #Add the results to the database file
+    con = sqlite3.connect("transit_search_results.db", detect_types=sqlite3.PARSE_DECLTYPES)
+    cur = con.cursor()
+    cur.execute("insert into results (ticid, sector, arr) values (?, ?, ?)", (ticid, sector, reordered_array, ))
+    con.commit()
+    con.close()
+    return 0
 
     #The following lines can save the periodograms and phase-folded light curve to additional files
     #tes2 = np.column_stack([
@@ -266,7 +295,8 @@ def save_results_file(file_name, results, params):
 def search_for_transit(time, flux, mass, radius, num_threads):
     model = transitleastsquares(time, flux)
     results = model.power(use_threads=num_threads, M_star=mass, M_star_min=0.8*mass, 
-                            M_star_max=1.2*mass, R_star=radius, R_star_min=0.8*radius, R_star_max=1.2*radius)
+                            M_star_max=1.2*mass, R_star=radius, R_star_min=0.8*radius, R_star_max=1.2*radius,
+                            show_progress_bar = False, verbose=False)
     return results
 
 def flatten_lightcurve(time, flux, sigma_upper, sigma_lower, window_length, method):
