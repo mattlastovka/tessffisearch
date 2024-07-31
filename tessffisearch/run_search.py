@@ -4,6 +4,7 @@ import pathlib
 import sys
 import common as cmn
 from astropy.table import QTable
+import logging
 
 def run_the_search(ticid, mass, radius, save_direc, sigma_upper=4., sigma_lower=12., window_length=0.8, 
                     method='biweight', sde_thresh=6, sec_thresh=2, num_threads=4):
