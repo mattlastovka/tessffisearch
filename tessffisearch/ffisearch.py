@@ -171,7 +171,7 @@ sqlite3.register_adapter(np.ndarray, adapt_array)
 # Converts TEXT to np.array when selecting
 sqlite3.register_converter("array", convert_array)
 
-def save_results_file(file_name, results, params):
+def save_results_file(results, params, ticid, sector):
     """
     This function saves the results of the transit search to a file. This function can save 3 different,
     files, the statistics, the periodogram, and the phase-folded light curve. Based on the current iteration,
