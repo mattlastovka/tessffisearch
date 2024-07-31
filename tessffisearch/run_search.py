@@ -7,7 +7,7 @@ import common as cmn
 
 def run_the_search(ticid, mass, radius, save_direc, sigma_upper=4., sigma_lower=12., window_length=0.8, 
                     method='biweight', sde_thresh=6, sec_thresh=2, num_threads=4):
-    light_curves, sectors = ff.retrieve_or_make_lc(ticid, lc_save_direc=(save_direc + '/tessphomo_lightcurves/'))
+    light_curves, sectors = ff.retrieve_or_make_lc(ticid, lc_save_direc=(save_direc + 'tessphomo_lightcurves/'))
     print("Finished")
     flux_id = ff.determine_best_flux(light_curves)
     print("Detrending and clipping light curves")
