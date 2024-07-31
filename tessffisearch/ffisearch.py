@@ -294,8 +294,8 @@ def save_results_file(file_name, results, params):
 
 def search_for_transit(time, flux, mass, radius, num_threads):
     model = transitleastsquares(time, flux)
-    results = model.power(use_threads=num_threads, M_star=mass, M_star_min=0.8*mass, 
-                            M_star_max=1.2*mass, R_star=radius, R_star_min=0.8*radius, R_star_max=1.2*radius,
+    results = model.power(use_threads=num_threads, M_star=mass[0], M_star_min=0.8*mass[0], 
+                            M_star_max=1.2*mass[0], R_star=radius[0], R_star_min=0.8*radius[0], R_star_max=1.2*radius,
                             show_progress_bar = False, verbose=False)
     return results
 
