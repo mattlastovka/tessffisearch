@@ -1,9 +1,9 @@
 import ffisearch as ff
 import time
-import pandas as pd
 import pathlib
 import sys
 import common as cmn
+from astropy.table import QTable
 
 def run_the_search(ticid, mass, radius, save_direc, sigma_upper=4., sigma_lower=12., window_length=0.8, 
                     method='biweight', sde_thresh=6, sec_thresh=2, num_threads=4):
@@ -45,7 +45,7 @@ if __name__ == "__main__":
     begin = int(sys.argv[1])
     end = int(sys.argv[2])
 
-    target_list = pd.read_csv("targets.csv")
+    target_list = QTable.read("targets.csv")
 
     transit_search_direc = cmn.transit_search_direc
 
@@ -54,7 +54,7 @@ if __name__ == "__main__":
         print("TIC", ticid)
         print("TESSmag", target_list['Tmag'][tic_index])
         mass = target_list['mass'][tic_index]
-        radius = target_list['rad']
+        radius = target_list['rad'][tic_index]
         run_the_search(ticid, mass, radius, transit_search_direc)
         finish_file = transit_search_direc + 'finished_runs.txt'
         finfile = open(finish_file, "a")  # append mode
