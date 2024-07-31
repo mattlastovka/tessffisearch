@@ -58,7 +58,7 @@ if __name__ == "__main__":
 
     for tic_index in range(begin, end):
         ticid = int(target_list['ID'][tic_index])
-        logfile = "logfiles/TIC" + str(ticid) + ".log"
+        logfile = transit_search_direc + "logfiles/TIC" + str(ticid) + ".log"
         logging.basicConfig(filename=logfile, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
         logger = logging.getLogger(__name__)
         logger.info("TIC "+ str(ticid))
