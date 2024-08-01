@@ -5,9 +5,12 @@ import sys
 import common as cmn
 from astropy.table import QTable
 import logging
+import lightkurve as lk
+import os
+import glob
 
 def run_the_search(ticid, mass, radius, save_direc, logger, sigma_upper=4., sigma_lower=12., window_length=0.8, 
-                    method='biweight', sde_thresh=6, sec_thresh=2, num_threads=4):
+                    method='biweight', sde_thresh=6, sec_thresh=2, num_threads=4, clear_cache=True):
     logger.info("getting light curves")
     light_curves, sectors = ff.retrieve_or_make_lc(ticid, lc_save_direc=(save_direc + 'tessphomo_lightcurves/'), logger=logger)
     logger.info("Finished")
@@ -42,6 +45,14 @@ def run_the_search(ticid, mass, radius, save_direc, logger, sigma_upper=4., sigm
     params = [flag, sec_num, sigma_upper, sigma_lower, window_length, method, flux_id]
     for i in range(len(all_results)):
         ff.save_results_file(all_results[i], params, ticid, sectors[i], save_direc)
+
+    #clear lightkurve tesscut cache
+    if clear_cache is True:
+        tesscut_cache_dir = lk.config.get_cache_dir() + "/tesscut"
+        files = glob.glob(os.listdir(tesscut_cache_dir))
+        for f in files:
+            os.remove(f)
+        logger.info("lightkurve cache cleared")
     return 0
 
 if __name__ == "__main__":
@@ -65,7 +76,7 @@ if __name__ == "__main__":
         logger.info("TESSmag " + str(target_list['Tmag'][tic_index]))
         mass = target_list['mass'][tic_index]
         radius = target_list['rad'][tic_index]
-        run_the_search(ticid, mass, radius, transit_search_direc, logger)
+        run_the_search(ticid, mass, radius, transit_search_direc, logger, clear_cache=True)
         finish_file = transit_search_direc + 'finished_runs.txt'
         finfile = open(finish_file, "a")  # append mode
         finfile.write(str(tic_index) + " " + str(ticid) + '\n')
