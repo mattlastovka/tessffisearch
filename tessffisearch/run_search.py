@@ -49,7 +49,7 @@ def run_the_search(ticid, mass, radius, save_direc, logger, sigma_upper=4., sigm
     #clear lightkurve tesscut cache
     if clear_cache is True:
         tesscut_cache_dir = lk.config.get_cache_dir() + "/tesscut"
-        files = glob.glob(os.listdir(tesscut_cache_dir))
+        files = glob.glob(tesscut_cache_dir)
         for f in files:
             os.remove(f)
         logger.info("lightkurve cache cleared")
