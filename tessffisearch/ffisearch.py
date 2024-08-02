@@ -13,6 +13,7 @@ import re
 import io
 import sqlite3
 import warnings
+import time
 
 #Plot settings
 myplot_specs = {
@@ -309,13 +310,13 @@ def flatten_lightcurve(time, flux, sigma_upper, sigma_lower, window_length, meth
                                return_trend=True, method=method, break_tolerance=0.1)
     return time[~mask], flatten_lc, trend_lc
 
-def make_light_curves(ticid, lc_save_direc, logger, save_direc, cutout_size=(25,25)):
-    tries = 3
+def make_light_curves(ticid, lc_save_direc, logger, save_direc, cutout_size=(25,25), tries=5):
     for i in range(tries):
         try:
             all_tpfs = retrieve_tess_ffi_cutout_from_mast(ticid=ticid, cutout_size=cutout_size, sector=None)
         except BaseException as e:
             if i < tries - 1: # i is zero indexed
+                time.sleep(2)
                 continue
             else:
                 except_file = save_direc + 'failed_tic.txt'
@@ -324,16 +325,29 @@ def make_light_curves(ticid, lc_save_direc, logger, save_direc, cutout_size=(25,
                 file1.close()
                 logger.exception(e)
         break
-    all_tpfs = retrieve_tess_ffi_cutout_from_mast(ticid=ticid, cutout_size=cutout_size, sector=None)
-    print(len(all_tpfs), "tpfs")
-    input_catalog = get_tic_sources(ticid, tpf_shape=all_tpfs[0].shape[1:])
+    #print(len(all_tpfs), "tpfs")
+    for i in range(tries):
+        try:
+            input_catalog = get_tic_sources(ticid, tpf_shape=all_tpfs[0].shape[1:])
+        except BaseException as e:
+            if i < tries - 1: # i is zero indexed
+                time.sleep(2)
+                continue
+            else:
+                except_file = save_direc + 'failed_tic.txt'
+                file1 = open(except_file, "a")  # append mode
+                file1.write(str(ticid) + '\n')
+                file1.close()
+                logger.exception(e)
+        break
     light_curves = []
     sectors = []
     for tpf in all_tpfs:
         try:
             TargetData = TESSTargetPixelModeler(tpf, input_catalog=input_catalog)
-            lc = TargetData.get_corrected_LightCurve(assume_catalog_mag=True)
-            write_lc_to_fits_file(TargetData, lc, lc_save_direc=lc_save_direc, overwrite=True)
+            lc = TargetData.get_corrected_LightCurve(assume_catalog_mag=True, progress=False)
+            with warnings.catch_warnings(action="ignore"):
+                write_lc_to_fits_file(TargetData, lc, lc_save_direc=lc_save_direc, overwrite=True)
             sectors.append(str(TargetData.tpf.sector).zfill(4))
             light_curves.append(lc)
         except BaseException as e:
