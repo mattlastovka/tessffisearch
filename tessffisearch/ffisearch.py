@@ -294,12 +294,12 @@ def save_results_file(results, params, ticid, sector, save_direc):
     #df3.columns = key_list[42:47]
     #df3.to_csv(file_name + 'phase.csv')
 
-def search_for_transit(time, flux, mass, radius, num_threads):
+def search_for_transit(time, flux, mass, radius, num_threads, period_max=12.):
     model = transitleastsquares(time, flux)
     with warnings.catch_warnings(action="ignore"):
         results = model.power(use_threads=num_threads, M_star=mass, M_star_min=0.8*mass, 
                                 M_star_max=1.2*mass, R_star=radius, R_star_min=0.8*radius, R_star_max=1.2*radius,
-                                show_progress_bar = False, verbose=False)
+                                show_progress_bar = False, verbose=False, period_max = period_max)
     return results
 
 def flatten_lightcurve(time, flux, sigma_upper, sigma_lower, window_length, method):
@@ -309,7 +309,21 @@ def flatten_lightcurve(time, flux, sigma_upper, sigma_lower, window_length, meth
                                return_trend=True, method=method, break_tolerance=0.1)
     return time[~mask], flatten_lc, trend_lc
 
-def make_light_curves(ticid, lc_save_direc, logger, cutout_size=(25,25)):
+def make_light_curves(ticid, lc_save_direc, logger, save_direc, cutout_size=(25,25)):
+    tries = 3
+    for i in range(tries):
+        try:
+            all_tpfs = retrieve_tess_ffi_cutout_from_mast(ticid=ticid, cutout_size=cutout_size, sector=None)
+        except BaseException as e:
+            if i < tries - 1: # i is zero indexed
+                continue
+            else:
+                except_file = save_direc + 'failed_tic.txt'
+                file1 = open(except_file, "a")  # append mode
+                file1.write(str(ticid) + '\n')
+                file1.close()
+                logger.exception(e)
+        break
     all_tpfs = retrieve_tess_ffi_cutout_from_mast(ticid=ticid, cutout_size=cutout_size, sector=None)
     print(len(all_tpfs), "tpfs")
     input_catalog = get_tic_sources(ticid, tpf_shape=all_tpfs[0].shape[1:])
@@ -322,17 +336,17 @@ def make_light_curves(ticid, lc_save_direc, logger, cutout_size=(25,25)):
             write_lc_to_fits_file(TargetData, lc, lc_save_direc=lc_save_direc, overwrite=True)
             sectors.append(str(TargetData.tpf.sector).zfill(4))
             light_curves.append(lc)
-        except:
-            print("ERROR!!!!!")
+        except BaseException as e:
+            logger.exception(e)
     return light_curves, sectors
 
-def retrieve_or_make_lc(ticid, lc_save_direc, logger):
+def retrieve_or_make_lc(ticid, lc_save_direc, logger, save_direc):
     dir_list = np.asarray(os.listdir(lc_save_direc))
     mask = np.asarray([(str(ticid).zfill(12) in i) for i in dir_list])
     masked_dir_list = dir_list[mask]
     if len(masked_dir_list) == 0:
         logger.info("making light curves")
-        light_curves, sectors = make_light_curves(ticid, lc_save_direc=lc_save_direc, logger=logger)
+        light_curves, sectors = make_light_curves(ticid, lc_save_direc=lc_save_direc, logger=logger, save_direc=save_direc)
     else:
         logger.info("light curves exist")
         light_curves = []
