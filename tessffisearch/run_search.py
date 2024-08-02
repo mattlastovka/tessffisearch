@@ -12,7 +12,7 @@ import glob
 def run_the_search(ticid, mass, radius, save_direc, logger, sigma_upper=4., sigma_lower=12., window_length=0.8, 
                     method='biweight', sde_thresh=6, sec_thresh=2, num_threads=4, clear_cache=True):
     logger.info("getting light curves")
-    light_curves, sectors = ff.retrieve_or_make_lc(ticid, lc_save_direc=(save_direc + 'tessphomo_lightcurves/'), logger=logger)
+    light_curves, sectors = ff.retrieve_or_make_lc(ticid, lc_save_direc=(save_direc + 'tessphomo_lightcurves/'), logger=logger, save_direc=save_direc)
     logger.info("Finished")
     flux_id = ff.determine_best_flux(light_curves)
     logger.info("Detrending and clipping light curves")
