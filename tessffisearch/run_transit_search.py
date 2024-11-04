@@ -123,7 +123,7 @@ if __name__ == "__main__":
 
     target_list = pd.read_csv("ultrasat_tois.csv")
 
-    transit_search_direc = './transit_search/'
+    transit_search_direc = cmn.transit_search_direc
 
     for ticid in unflagged_tics:
         #print(ticid)
