@@ -1,4 +1,4 @@
-import ffisearch_knowntoi as ff
+import ffisearch as ff
 import time
 import pathlib
 from astropy.table import QTable, vstack
@@ -30,7 +30,7 @@ def run_the_search(ticid, mass, radius, save_direc, logger, sigma_upper=4., sigm
                     method='biweight', sde_thresh=6, sec_thresh=2, num_threads=1, clear_cache=True):
     logger.info("getting light curves")
     #Define directory where light curves are
-    light_curve_direc = (save_direc + 'tessphomo_lightcurves/')
+    light_curve_direc = cmn.light_curve_direc
     dir_list = np.asarray(os.listdir(light_curve_direc))
     #get file names for the given TIC ID
     mask = np.asarray([(str(ticid).zfill(12) in i) for i in dir_list])
@@ -117,15 +117,12 @@ def run_the_search(ticid, mass, radius, save_direc, logger, sigma_upper=4., sigm
 
 if __name__ == "__main__":
     start_time = time.time()
-    
-    unflagged = pd.read_csv("unflagged_tics.csv")
-    unflagged_tics = np.array(unflagged["TIC ID"])
 
-    target_list = pd.read_csv("ultrasat_tois.csv")
+    target_list = pd.read_csv("targets.csv")
 
     transit_search_direc = cmn.transit_search_direc
 
-    for ticid in unflagged_tics:
+    for ticid in target_list['TIC ID']:
         #print(ticid)
         tic_index = np.where(target_list['TIC ID'] == ticid)[0][0]
         #print(tic_index)
