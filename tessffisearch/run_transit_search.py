@@ -122,17 +122,17 @@ if __name__ == "__main__":
 
     transit_search_direc = cmn.transit_search_direc
 
-    for ticid in target_list['TIC ID']:
+    for ticid in target_list['ID']:
         #print(ticid)
-        tic_index = np.where(target_list['TIC ID'] == ticid)[0][0]
+        tic_index = np.where(target_list['ID'] == ticid)[0][0]
         #print(tic_index)
         logfile = transit_search_direc + "logfiles/TIC" + str(ticid) + ".log"
         logging.basicConfig(filename=logfile, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
         logger = logging.getLogger(__name__)
         logger.info("TIC "+ str(ticid))
         #logger.info("TESSmag " + str(target_list['TESS mag'][tic_index]))
-        mass = target_list['Stellar Mass (M_Sun)'][tic_index]
-        radius = target_list['Stellar Radius (R_Sun)'][tic_index]                    
+        mass = target_list['mass'][tic_index]
+        radius = target_list['rad'][tic_index]                    
         run_the_search(ticid, mass, radius, transit_search_direc, logger, clear_cache=True)
         finish_file = transit_search_direc + 'finished_runs.txt'
         finfile = open(finish_file, "a")  # append mode
