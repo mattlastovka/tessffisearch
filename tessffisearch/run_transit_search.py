@@ -95,7 +95,7 @@ def run_the_search(ticid, mass, radius, save_direc, logger, sigma_upper=4., sigm
     flag, sec_num = ff.flagging_criteria(all_results, sde_thresh = sde_thresh, sec_thresh=sec_thresh1, save_direc=save_direc)
     if flag is True:
         logger.info("potential transit detected")
-        flag_file = save_direc + 'toi_flagged_tic_multi.txt'
+        flag_file = save_direc + 'flagged_tic.txt'
         file1 = open(flag_file, "a")  # append mode
         file1.write(str(ticid) + ' ' + str(sec_num) + '\n')
         file1.close()
@@ -134,7 +134,7 @@ if __name__ == "__main__":
         mass = target_list['Stellar Mass (M_Sun)'][tic_index]
         radius = target_list['Stellar Radius (R_Sun)'][tic_index]                    
         run_the_search(ticid, mass, radius, transit_search_direc, logger, clear_cache=True)
-        finish_file = transit_search_direc + 'toi_multisector_finished_runs.txt'
+        finish_file = transit_search_direc + 'finished_runs.txt'
         finfile = open(finish_file, "a")  # append mode
         finfile.write(str(tic_index) + " " + str(ticid) + '\n')
         finfile.close()
