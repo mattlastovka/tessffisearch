@@ -12,20 +12,6 @@ import numpy as np
 import io
 import re
 
-def adapt_array(arr):
-    """
-    http://stackoverflow.com/a/31312102/190597 (SoulNibbler)
-    """
-    out = io.BytesIO()
-    np.save(out, arr)
-    out.seek(0)
-    return sqlite3.Binary(out.read())
-
-def convert_array(text):
-    out = io.BytesIO(text)
-    out.seek(0)
-    return np.load(out, allow_pickle=True)
-
 def run_the_search(ticid, mass, radius, save_direc, logger, sigma_upper=4., sigma_lower=12., window_length=0.8, 
                     method='biweight', sde_thresh=6, sec_thresh=2, num_threads=1, clear_cache=True):
     logger.info("getting light curves")
