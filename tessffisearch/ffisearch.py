@@ -13,7 +13,6 @@ import re
 import io
 import sqlite3
 import warnings
-import time
 
 #Plot settings
 myplot_specs = {
@@ -85,9 +84,16 @@ def plot_lightcurve_and_systematics(lc, sector, ticid, **kwargs):
     plt.tight_layout()
 
 def determine_best_flux(light_curves):
+    """
+    This function determines whether to use the CAP or PRF light curves. Calculates the standard deviation
+    of each light curve, then counts how many light curves have PRF better or CAP better. If the counts for
+    PRF and CAP are the same, then calculate the sum of all the standard deviations and use the one with
+    the smaller sum.
+    """
     cap_tal = 0
     prf_tal = 0
     for i in range(len(light_curves)):
+        #Determine the standard deviation of both light curves
         cap_std = np.std(light_curves[i]['cal_cap_flux'].value)
         prf_std = np.std(light_curves[i]['cal_prf_flux'].value)
         if cap_std > prf_std:
@@ -118,24 +124,20 @@ def count(list1, l, r):
     return len(list(x for x in list1 if l <= x <= r))
 
 def flagging_criteria(all_results, sde_thresh = 6, save_direc='./transit_search/', sec_thresh=2):
-    #This is the code for flagging whether a transit-like signal is detected
+    """
+    This is the code for flagging whether a transit-like signal is detected.
+
+    For each light curve, check that the FAP is low enough, the SDE is above the threshhold, and 
+    there are at least 2 transits seen.
+
+    Then flag if there are the required number of light curves that have similar periods
+    """
     new_results = []
     flag = False
     for i in all_results:
         if i.FAP < 1e-2 and (i.SDE > sde_thresh):
             if i.transit_count >= 2:
                 new_results.append(i)
-                #transit_file = save_direc + 'transit_times.txt'
-                #file3 = open(transit_file, "a")  # append mode
-                #for j in range(i.transit_count):
-                #    file3.write(str(i.transit_times[j]) + " ")
-                #file3.write("\n")
-                #file3.close()
-            #else:
-                #low_file = save_direc + 'flagged_w_1_transit.txt'
-                #file2 = open(low_file, "a")  # append mode
-                #file2.write(str(ticid) + '\n')
-                #file2.close()
     new_ps = [i.period for i in new_results]
     secs = []
     for i in new_results:
@@ -273,29 +275,11 @@ def save_results_file(results, params, ticid, sector, save_direc):
     con.close()
     return 0
 
-    #The following lines can save the periodograms and phase-folded light curve to additional files
-    #tes2 = np.column_stack([
-    #    list(dict(list(results.items())[28:29]).values())[0],
-    #    list(dict(list(results.items())[29:30]).values())[0],
-    #    list(dict(list(results.items())[30:31]).values())[0],
-    #    list(dict(list(results.items())[31:32]).values())[0],
-    #    list(dict(list(results.items())[32:33]).values())[0],
-    #    list(dict(list(results.items())[33:34]).values())[0]])
-    #df2 = pd.DataFrame(tes2)
-    #df2.columns = key_list[34:40]
-    #df2.to_csv(file_name + 'power.csv')
-    
-    #tes3 = np.column_stack([
-    #    list(dict(list(results.items())[36:37]).values())[0],
-    #    list(dict(list(results.items())[37:38]).values())[0],
-    #    list(dict(list(results.items())[38:39]).values())[0],
-    #    list(dict(list(results.items())[39:40]).values())[0],
-    #    list(dict(list(results.items())[40:41]).values())[0]])
-    #df3 = pd.DataFrame(tes3)
-    #df3.columns = key_list[42:47]
-    #df3.to_csv(file_name + 'phase.csv')
-
 def search_for_transit(time, flux, mass, radius, num_threads, period_max=12.):
+    """
+    This function searches for a transit using transitleastsquares. Use the star masses from the 
+    TIC to make the performance better.
+    """
     model = transitleastsquares(time, flux)
     with warnings.catch_warnings(action="ignore"):
         results = model.power(use_threads=num_threads, M_star=mass, M_star_min=0.8*mass, 
@@ -304,19 +288,23 @@ def search_for_transit(time, flux, mass, radius, num_threads, period_max=12.):
     return results
 
 def flatten_lightcurve(time, flux, sigma_upper, sigma_lower, window_length, method):
+    """
+    This function applies sigma clipping (to remove outlier data points) and uses wotan to flatten
+    the light curve
+    """
     clipped_flux = sigma_clip(flux, sigma_upper=sigma_upper, sigma_lower=sigma_lower, masked=True)
     mask = clipped_flux.mask
     flatten_lc, trend_lc = flatten(time[~mask], flux[~mask], window_length=window_length, 
                                return_trend=True, method=method, break_tolerance=0.1)
     return time[~mask], flatten_lc, trend_lc
 
-def make_light_curves(ticid, lc_save_direc, logger, save_direc, cutout_size=(25,25), tries=5):
+def make_light_curves(ticid, lc_save_direc, logger, save_direc, cutout_size=(25,25)):
+    tries = 3
     for i in range(tries):
         try:
             all_tpfs = retrieve_tess_ffi_cutout_from_mast(ticid=ticid, cutout_size=cutout_size, sector=None)
         except BaseException as e:
             if i < tries - 1: # i is zero indexed
-                time.sleep(2)
                 continue
             else:
                 except_file = save_direc + 'failed_tic.txt'
@@ -325,27 +313,15 @@ def make_light_curves(ticid, lc_save_direc, logger, save_direc, cutout_size=(25,
                 file1.close()
                 logger.exception(e)
         break
-    #print(len(all_tpfs), "tpfs")
-    for i in range(tries):
-        try:
-            input_catalog = get_tic_sources(ticid, tpf_shape=all_tpfs[0].shape[1:])
-        except BaseException as e:
-            if i < tries - 1: # i is zero indexed
-                time.sleep(2)
-                continue
-            else:
-                except_file = save_direc + 'failed_tic.txt'
-                file1 = open(except_file, "a")  # append mode
-                file1.write(str(ticid) + '\n')
-                file1.close()
-                logger.exception(e)
-        break
+    all_tpfs = retrieve_tess_ffi_cutout_from_mast(ticid=ticid, cutout_size=cutout_size, sector=None)
+    print(len(all_tpfs), "tpfs")
+    input_catalog = get_tic_sources(ticid, tpf_shape=all_tpfs[0].shape[1:])
     light_curves = []
     sectors = []
     for tpf in all_tpfs:
         try:
             TargetData = TESSTargetPixelModeler(tpf, input_catalog=input_catalog)
-            lc = TargetData.get_corrected_LightCurve(assume_catalog_mag=True, progress=False)
+            lc = TargetData.get_corrected_LightCurve(assume_catalog_mag=True)
             with warnings.catch_warnings(action="ignore"):
                 write_lc_to_fits_file(TargetData, lc, lc_save_direc=lc_save_direc, overwrite=True)
             sectors.append(str(TargetData.tpf.sector).zfill(4))
