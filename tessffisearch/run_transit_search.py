@@ -12,7 +12,11 @@ import numpy as np
 import io
 import re
 
+<<<<<<< HEAD
+def run_the_search(ticid, mass, radius, save_direc, logger, sigma_upper=4., window_length=0.8, 
+=======
 def run_the_search(ticid, mass, radius, save_direc, logger, sigma_upper=4., sigma_lower=12., window_length=0.8, 
+>>>>>>> 637ec3233c8847fb985f6bbb6b5e7d894fb00e42
                     method='biweight', sde_thresh=6, sec_thresh=2, num_threads=1, clear_cache=True):
     logger.info("getting light curves")
     #Define directory where light curves are
@@ -63,7 +67,7 @@ def run_the_search(ticid, mass, radius, save_direc, logger, sigma_upper=4., sigm
         #Run all the light curves through wotan detrending. The flattened light curve is "flat"
         time = light_curves[i]['time'].value
         flux = light_curves[i][flux_id].value
-        times, flat, trend = ff.flatten_lightcurve(time, flux, sigma_upper, sigma_lower, window_length, method)
+        times, flat, trend = ff.flatten_lightcurve(time, flux, sigma_upper, window_length, method)
         all_flat.append(flat)
         all_times.append(times)
     logger.info("running transit search")
