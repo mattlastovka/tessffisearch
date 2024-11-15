@@ -1,46 +1,47 @@
 import ffisearch as ff
 import time
-import pathlib
 from astropy.table import QTable, vstack
 import logging
 import lightkurve as lk
 import os
 import glob
-import sqlite3
 import pandas as pd
 import numpy as np
-import io
 import re
+from transitleastsquares import transit_mask
+import common as cmn
 
-<<<<<<< HEAD
 def run_the_search(ticid, mass, radius, save_direc, logger, sigma_upper=4., window_length=0.8, 
-=======
-def run_the_search(ticid, mass, radius, save_direc, logger, sigma_upper=4., sigma_lower=12., window_length=0.8, 
->>>>>>> 637ec3233c8847fb985f6bbb6b5e7d894fb00e42
                     method='biweight', sde_thresh=6, sec_thresh=2, num_threads=1, clear_cache=True):
     logger.info("getting light curves")
     #Define directory where light curves are
-    light_curve_direc = cmn.light_curve_direc
+    light_curve_direc = cmn.light_curve_direc + str(ticid)[:-5].zfill(5) + 'XXXXX/lc-' + str(ticid).zfill(10) + "/"
     dir_list = np.asarray(os.listdir(light_curve_direc))
     #get file names for the given TIC ID
-    mask = np.asarray([(str(ticid).zfill(12) in i) for i in dir_list])
-    masked_dir_list = dir_list[mask]
     #Open the light curve files and 
     light_curves2 = []
     sectors = []
     full_2d_list = []
-    for i in masked_dir_list:
+    for i in dir_list:
         #Open the light curve using astropy
-        read_lc = QTable.read((light_curve_direc + i), format='fits', astropy_native=True)
-        #Correct the time column to TESS times (BTJD)
-        read_lc['time'] = lk.LightCurve(read_lc).time.btjd
-        light_curves2.append(read_lc)
+        data = pd.read_parquet(light_curve_direc+i)
+        data_as = QTable.from_pandas(data)
+        data_as['time'] = data_as['time'].jd - 2457000
+        light_curves2.append(data_as)
         #Determine the sector using the light curve file name
-        sector = re.findall('sector_00(.*)_tic', i)[0]
+        sector = re.findall('-s(.*)-', i)[0][:2]
         sectors.append(int(sector))
-        full_2d_list.append([read_lc, int(sector)])
+        full_2d_list.append([data_as, int(sector)])
     #use the light curves to determine CAP or PRF
     flux_id = ff.determine_best_flux(light_curves2)
+    logger.info("Detrending and clipping light curves")
+    for i in range(len(full_2d_list)):
+        light_curve = full_2d_list[i][0]
+        time = light_curve['time'].value
+        flux = light_curve[flux_id].value
+        times, flat, mask = ff.flatten_lightcurve(time, flux, sigma_upper, window_length, method)
+        full_2d_list[i][0] = full_2d_list[i][0][~mask]
+        full_2d_list[i][0]['flat_flux'] = flat
     #Sort sectors in numerical order to determnine if consecutive
     sorted_sectors = sorted(sectors)
     consecutive_sectors = []
@@ -60,25 +61,33 @@ def run_the_search(ticid, mass, radius, save_direc, logger, sigma_upper=4., sigm
         stack.sort('time')
         light_curves.append(stack)
 
-    logger.info("Detrending and clipping light curves")
-    all_flat = []
-    all_times = []
-    for i in range(len(light_curves)):
-        #Run all the light curves through wotan detrending. The flattened light curve is "flat"
-        time = light_curves[i]['time'].value
-        flux = light_curves[i][flux_id].value
-        times, flat, trend = ff.flatten_lightcurve(time, flux, sigma_upper, window_length, method)
-        all_flat.append(flat)
-        all_times.append(times)
     logger.info("running transit search")
     all_results = []
+    all_consec_sectors= []
     for i in range(len(light_curves)):
         #run the transit search, add all the results to a list
-        results = ff.search_for_transit(all_times[i], all_flat[i], mass=mass, radius=radius, num_threads=num_threads)
+        search_time = light_curves[i]['time'].value
+        search_flux = light_curves[i]['flat_flux'].value
+        results = ff.search_for_transit(search_time, search_flux, mass=mass, radius=radius, num_threads=num_threads)
+        all_consec_sectors.append(consecutive_sectors[i])
         all_results.append(results)
+        SDE = results.SDE
+        test_number = 1
+        while SDE > 7:
+            in_transit_mask = transit_mask(search_time, results.period, results.duration, results.T0)
+            search_time = search_time[~in_transit_mask]
+            search_flux = search_flux[~in_transit_mask]
+            results = ff.search_for_transit(search_time, search_flux, mass=mass, radius=radius, num_threads=num_threads)
+            SDE = results.SDE
+            if SDE > 0:
+                all_consec_sectors.append(consecutive_sectors[i])
+                all_results.append(results)
+            if test_number >= 10:
+                break
+            test_number += 1  
     logger.info("Determine Flag")
     #Set up so that flagged in either 2 or 20% of light curves (whichever is more)
-    if 0.2*len(all_results) > sec_thresh:
+    if 0.2*len(light_curves) > sec_thresh:
         sec_thresh1 = int(0.2*len(all_results))
     else:
         sec_thresh1 = sec_thresh
@@ -92,9 +101,9 @@ def run_the_search(ticid, mass, radius, save_direc, logger, sigma_upper=4., sigm
     else:
         logger.info("no transit found")
     logger.info("saving transit search results")
-    params = [flag, sec_num, sigma_upper, sigma_lower, window_length, method, flux_id]
+    params = [flag, sec_num, sigma_upper, window_length, method, flux_id]
     for i in range(len(all_results)):
-        ff.save_results_file(all_results[i], params, ticid, consecutive_sectors[i], save_direc)
+        ff.save_results_file(all_results[i], params, ticid, all_consec_sectors[i], save_direc)
 
 	#clear lightkurve tesscut cache
     if clear_cache is True:

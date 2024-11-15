@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
+#import pandas as pd
 from transitleastsquares import transitleastsquares
 from astropy.stats import sigma_clip
 from tessphomo import TESSTargetPixelModeler
@@ -175,7 +175,7 @@ sqlite3.register_adapter(np.ndarray, adapt_array)
 # Converts TEXT to np.array when selecting
 sqlite3.register_converter("array", convert_array)
 
-def save_results_file(results, params, ticid, sector, save_direc):
+def save_results_file_deprecated(results, params, ticid, sector, save_direc):
     """
     This function saves the results of the transit search to a file. This function can save 3 different,
     files, the statistics, the periodogram, and the phase-folded light curve. Based on the current iteration,
@@ -275,6 +275,66 @@ def save_results_file(results, params, ticid, sector, save_direc):
     con.close()
     return 0
 
+def save_results_file(results, params, ticid, sector, save_direc):
+    """
+    This function saves the results of the transit search to a file.
+
+    Inputs:
+    -----------
+    file_name: (str)
+        The name of the file to save the results to. Should include the TIC-ID and the sector number.
+
+    results: (tls results object)
+        The results object that is the output of the (TLS model).power function
+
+    params: (array-like)
+        An array of the additional params to add to the results file. Should be in the following order:
+            [flag, sigma_upper, sigma_lower, window_length, method, flux_id]
+            flag: (Boolean)
+                If True, potential transit detected
+
+            sigma_upper: (number)
+                The upper significance bound used for sigma-clipping of the light curve
+
+            window_length: (number)
+                Window length parameter as input for wotan detrending
+
+            method: (str)
+                Method used for detrending (see wotan documentation for options)
+
+            flux_id: (str)
+                Method used to calculate flux. Can be determined by the "determine_best_flux" function.
+                Should be either "cal_cap_flux" or "cal_prf_flux"
+    """
+    save_results_dict = {
+        "flag": params[0],
+        "SDE": results.SDE,
+        "SDE_raw": results.SDE_raw,
+        "period": results.period,
+        "period_uncertainty": results.period_uncertainty,
+        "T0": results.T0,
+        "duration": results.duration,
+        "depth": results.depth,
+        "FAP": results.FAP,
+        "transit_count": results.transit_count,
+        "sec_num": params[1],
+        "sigma_upper": params[2],
+        "window_length": params[3],
+        "method": params[4],
+        "flux_id": params[5]
+        }
+    #Reorder the array so that each element corresponds to a different column in the dataframe
+    reordered_array = np.asarray(list(save_results_dict.values()))
+    #Add the results to the database file
+    file_name = save_direc + "transit_search_results.db"
+    sector_string = str(sector[0]) + "-" + str(sector[-1])
+    con = sqlite3.connect(file_name, detect_types=sqlite3.PARSE_DECLTYPES)
+    cur = con.cursor()
+    cur.execute("insert into results (ticid, sector, arr) values (?, ?, ?)", (ticid, sector_string, reordered_array, ))
+    con.commit()
+    con.close()
+    return 0
+
 def search_for_transit(time, flux, mass, radius, num_threads, period_max=12.):
     """
     This function searches for a transit using transitleastsquares. Use the star masses from the 
@@ -287,16 +347,17 @@ def search_for_transit(time, flux, mass, radius, num_threads, period_max=12.):
                                 show_progress_bar = False, verbose=False, period_max = period_max)
     return results
 
-def flatten_lightcurve(time, flux, sigma_upper, sigma_lower, window_length, method):
+def flatten_lightcurve(time, flux, sigma_upper, window_length, method):
     """
     This function applies sigma clipping (to remove outlier data points) and uses wotan to flatten
     the light curve
     """
-    clipped_flux = sigma_clip(flux, sigma_upper=sigma_upper, sigma_lower=sigma_lower, masked=True)
-    mask = clipped_flux.mask
-    flatten_lc, trend_lc = flatten(time[~mask], flux[~mask], window_length=window_length, 
+    flatten_lc, trend_lc = flatten(time, flux, window_length=window_length, 
                                return_trend=True, method=method, break_tolerance=0.1)
-    return time[~mask], flatten_lc, trend_lc
+                               
+    clipped_flux = sigma_clip(flatten_lc, sigma_upper=sigma_upper, masked=True)
+    mask = clipped_flux.mask
+    return time[~mask], flatten_lc[~mask], mask
 
 def make_light_curves(ticid, lc_save_direc, logger, save_direc, cutout_size=(25,25)):
     tries = 3
