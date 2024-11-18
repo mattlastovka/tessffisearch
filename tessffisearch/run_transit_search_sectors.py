@@ -64,12 +64,11 @@ if __name__ == "__main__":
 	#end = int(sys.argv[2])
 
 	sector = 51
-	tic_list = np.genfromtxt("s51_tics_w_lc.txt")
 	target_list = pd.read_csv("targets.csv")
 
 	transit_search_direc = cmn.transit_search_direc
 	
-	for i in range(len(target_tom[:2000])):
+	for i in range(len(target_tom)):
 		if target_tom['Sector'][i] == sector:
 			ticid = target_tom['ID'][i]
 			camera = target_tom['Camera'][i]
