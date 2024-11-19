@@ -69,7 +69,7 @@ if __name__ == "__main__":
 			ticid = target_tom['ID'][i]
 			camera = target_tom['Camera'][i]
 			ccd = target_tom['CCD'][i]
-			lc_filname = cmn.light_curve_direc + str(ticid)[:-5].zfill(5) + 'XXXXX/lc-' + str(ticid).zfill(10) + "/lc-" + str(ticid) + "-s" + str(sector) + "-" + str(camera) + "-" + str(ccd) + ".parquet.gzip"
+			lc_filname = cmn.light_curve_direc + str(ticid)[:-5].zfill(5) + 'XXXXX/lc-' + str(ticid).zfill(10) + "/lc-" + str(ticid).zfill(10) + "-s" + str(sector) + "-" + str(camera) + "-" + str(ccd) + ".parquet.gzip"
 			if os.path.exists(lc_filname):
 				#print(ticid)
 				tic_index = np.where(target_list['ID'] == int(ticid))[0][0]
