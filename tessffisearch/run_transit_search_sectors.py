@@ -60,6 +60,7 @@ if __name__ == "__main__":
 
 	sector = 51
 	target_list = pd.read_csv("targets.csv")
+	target_tom = pd.read_csv("target_locations.csv")
 
 	transit_search_direc = cmn.transit_search_direc
 	
