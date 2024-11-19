@@ -46,13 +46,8 @@ def run_the_search(lc_file, sector, ticid, mass, radius, save_direc, logger, sig
 	#print(in_transit_cadence)
 	in_transit_times = times[in_transit_mask]
 	sector_filename = "s" + str(sector) + "_transit_cadence.txt"
-	sector_filename2 = "s" + str(sector) + "_transit_times.txt"
 	with open(sector_filename, 'a') as f:
 		for k in in_transit_cadence:
-			f.write(str(k) + " ")
-		f.write("\n")
-	with open(sector_filename2, 'a') as f:
-		for k in in_transit_times:
 			f.write(str(k) + " ")
 		f.write("\n")
 	return 0
