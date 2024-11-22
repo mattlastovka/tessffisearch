@@ -100,21 +100,24 @@ def determine_best_flux(light_curves):
             prf_tal += 1
         elif cap_std < prf_std:
             cap_tal += 1
-    if cap_tal > prf_tal:
-        #print("Use cap")
-        flux_id = 'cal_cap_flux'
-    elif prf_tal > cap_tal:
-        #print("Use prf")
+    cap_d = sum([np.std(light_curves[i]['cal_cap_flux'].value) for i in range(len(light_curves))])
+    prf_d = sum([np.std(light_curves[i]['cal_prf_flux'].value) for i in range(len(light_curves))])
+    if (cap_d/prf_d) > 1e4:
         flux_id = 'cal_prf_flux'
     else:
-        cap_d = sum([np.std(light_curves[i]['cal_cap_flux'].value) for i in range(len(light_curves))])
-        prf_d = sum([np.std(light_curves[i]['cal_prf_flux'].value) for i in range(len(light_curves))])
-        if cap_d < prf_d:
+        if cap_tal > prf_tal:
             #print("Use cap")
             flux_id = 'cal_cap_flux'
-        else:
+        elif prf_tal > cap_tal:
             #print("Use prf")
             flux_id = 'cal_prf_flux'
+        else:
+            if cap_d < prf_d:
+                #print("Use cap")
+                flux_id = 'cal_cap_flux'
+            else:
+                #print("Use prf")
+                flux_id = 'cal_prf_flux'
     return flux_id
 
 def count(list1, l, r):
