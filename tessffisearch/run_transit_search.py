@@ -1,6 +1,7 @@
 import ffisearch as ff
 import time
-from astropy.table import QTable, vstack
+from astropy.table import QTable
+from astropy.time import Time
 import logging
 import lightkurve as lk
 import os
@@ -25,20 +26,21 @@ def run_the_search(ticid, mass, radius, save_direc, logger, sigma_upper=4., wind
     for i in dir_list:
         #Open the light curve using astropy
         data = pd.read_parquet(light_curve_direc+i)
-        data_as = QTable.from_pandas(data)
-        data_as['time'] = data_as['time'].jd - 2457000
-        light_curves2.append(data_as)
+        bad_cadences = pd.read_csv("sector_remove_files/s"+str(int(sector))+"_remove.csv")
+    	data['time'] = Time(data["time"]).jd - 2457000
+    	mask_data = data[~data['cadenceno'].isin(bad_cadences['Cadence'])].reset_index(drop=True)
+        light_curves2.append(mask_data)
         #Determine the sector using the light curve file name
         sector = re.findall('-s(.*)-', i)[0][:2]
         sectors.append(int(sector))
-        full_2d_list.append([data_as, int(sector)])
+        full_2d_list.append([mask_data, int(sector)])
     #use the light curves to determine CAP or PRF
     flux_id = ff.determine_best_flux(light_curves2)
     logger.info("Detrending and clipping light curves")
     for i in range(len(full_2d_list)):
         light_curve = full_2d_list[i][0]
-        time = light_curve['time'].value
-        flux = light_curve[flux_id].value
+        time = light_curve['time'].to_numpy()
+        flux = light_curve[flux_id].to_numpy()
         times, flat, mask = ff.flatten_lightcurve(time, flux, sigma_upper, window_length, method)
         full_2d_list[i][0] = full_2d_list[i][0][~mask]
         full_2d_list[i][0]['flat_flux'] = flat
@@ -56,9 +58,9 @@ def run_the_search(ticid, mass, radius, save_direc, logger, sigma_upper=4., wind
     light_curves = []
     for i in consecutive_sectors:
         #stack the light curves using astropy vstack
-        stack = vstack([full_2d_list[j][0] for j in range(len(full_2d_list)) if full_2d_list[j][1] in i])
+        stack = pd.concat([full_2d_list[j][0] for j in range(len(full_2d_list)) if full_2d_list[j][1] in i])
         #Resort the new light curve so that it is in sequential order
-        stack.sort('time')
+        stack.sort_values('time')
         light_curves.append(stack)
 
     logger.info("running transit search")
