@@ -144,8 +144,8 @@ def flagging_criteria(all_results, sde_thresh = 6, save_direc='./transit_search/
     new_ps = [i.period for i in new_results]
     secs = []
     for i in new_results:
-        upper = i.period + i.period_uncertainty
-        lower = i.period - i.period_uncertainty
+        upper = i.period + 2*i.period_uncertainty
+        lower = i.period - 2*i.period_uncertainty
         sim_count = count(new_ps, lower, upper)
         if sim_count > (sec_thresh-1):
             flag = True
@@ -350,7 +350,7 @@ def search_for_transit(time, flux, mass, radius, num_threads, period_max=12.):
                                 show_progress_bar = False, verbose=False, period_max = period_max)
     return results
 
-def flatten_lightcurve(time, flux, sigma_upper, window_length, method):
+def flatten_lightcurve(time, flux, sigma_upper, window_length, method, sigma_lower=np.inf):
     """
     This function applies sigma clipping (to remove outlier data points) and uses wotan to flatten
     the light curve
@@ -358,7 +358,7 @@ def flatten_lightcurve(time, flux, sigma_upper, window_length, method):
     flatten_lc, trend_lc = flatten(time, flux, window_length=window_length, 
                                return_trend=True, method=method, break_tolerance=0.1)
                                
-    clipped_flux = sigma_clip(flatten_lc, sigma_upper=sigma_upper, masked=True)
+    clipped_flux = sigma_clip(flatten_lc, sigma_upper=sigma_upper, sigma_lower=sigma_lower masked=True)
     mask = clipped_flux.mask
     return time[~mask], flatten_lc[~mask], mask
 
