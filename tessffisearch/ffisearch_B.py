@@ -94,14 +94,14 @@ def determine_best_flux(light_curves):
     prf_tal = 0
     for i in range(len(light_curves)):
         #Determine the standard deviation of both light curves
-        cap_std = np.std(light_curves[i]['cal_cap_flux'].value)
-        prf_std = np.std(light_curves[i]['cal_prf_flux'].value)
+        cap_std = np.std(light_curves[i]['cal_cap_flux'])
+        prf_std = np.std(light_curves[i]['cal_prf_flux'])
         if cap_std > prf_std:
             prf_tal += 1
         elif cap_std < prf_std:
             cap_tal += 1
-    cap_d = sum([np.std(light_curves[i]['cal_cap_flux'].value) for i in range(len(light_curves))])
-    prf_d = sum([np.std(light_curves[i]['cal_prf_flux'].value) for i in range(len(light_curves))])
+    cap_d = sum([np.std(light_curves[i]['cal_cap_flux']) for i in range(len(light_curves))])
+    prf_d = sum([np.std(light_curves[i]['cal_prf_flux']) for i in range(len(light_curves))])
     if (cap_d/prf_d) > 1e4:
         flux_id = 'cal_prf_flux'
     else:
