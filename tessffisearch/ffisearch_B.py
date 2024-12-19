@@ -358,7 +358,7 @@ def flatten_lightcurve(time, flux, sigma_upper, window_length, method, sigma_low
     flatten_lc, trend_lc = flatten(time, flux, window_length=window_length, 
                                return_trend=True, method=method, break_tolerance=0.1)
                                
-    clipped_flux = sigma_clip(flatten_lc, sigma_upper=sigma_upper, sigma_lower=sigma_lower masked=True)
+    clipped_flux = sigma_clip(flatten_lc, sigma_upper=sigma_upper, sigma_lower=sigma_lower, masked=True)
     mask = clipped_flux.mask
     return time[~mask], flatten_lc[~mask], mask
 
